@@ -1,1 +1,162 @@
-# shop
+# shop<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沒毛病｜寵物溝通 花草能量療癒商品</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --bg: #FDFCF9; --white: #FFFFFF; --sage: #8DAA91; --sage-dark: #6B846F; --text: #4A4A4A; --radius: 18px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; margin: 0; padding-bottom: 80px; }
+        header { text-align: center; padding: 15px; background: white; border-bottom: 1px solid #EEE; position: sticky; top: 0; z-index: 1100; }
+        header h1 { font-size: 1.1rem; color: var(--sage-dark); margin: 0; }
+        nav { background: white; padding: 10px; display: flex; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        nav button { background: none; border: 1px solid var(--sage); color: var(--sage); padding: 6px 12px; border-radius: 50px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        nav button.active { background: var(--sage); color: white; }
+        .container { max-width: 800px; width: 100%; margin: 0 auto; padding: 15px; box-sizing: border-box; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        .card { background: white; border-radius: var(--radius); padding: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 15px; position: relative; }
+        .btn-main { background: var(--sage); color: white; border: none; padding: 12px; border-radius: 50px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input, textarea, select { width: 100%; border: 1px solid #EEE; border-radius: 10px; padding: 12px; margin: 8px 0; box-sizing: border-box; background: #FAFAFA; font-size: 14px; }
+        .order-item { border-bottom: 1px solid #F0F0F0; padding: 12px 0; cursor: pointer; }
+        .status-badge { padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: bold; float: right; }
+        .status-wait { background: #FFF4E5; color: #D48806; }
+        .pay-img-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 5px; margin-right: 10px; }
+        #cart-floater { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 20px; border-radius: 50px; z-index: 2000; cursor: pointer; display: none; }
+    </style>
+</head>
+<body>
+
+<header><h1>沒毛病｜寵物溝通 花草能量療癒商品</h1></header>
+
+<nav id="adminNav" style="display:none;">
+    <button onclick="switchView('shop')">能量商店</button>
+    <button onclick="switchView('admin')">管理後台</button>
+    <button onclick="switchView('settings')">商品設定</button>
+</nav>
+
+<div id="cart-floater" onclick="switchView('cartDetail')">🛒 購物車 (<span id="cart-count">0</span>)</div>
+
+<div class="container">
+    <section id="viewShop" class="view-section active">
+        <div id="shopDisplay" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;"></div>
+    </section>
+
+    <section id="viewCartDetail" class="view-section">
+        <div class="card">
+            <h3>🛒 購物車明細</h3>
+            <div id="fullCartList"></div>
+            <button class="btn-main" onclick="switchView('checkout')">前往結帳</button>
+        </div>
+    </section>
+
+    <section id="viewCheckout" class="view-section">
+        <div class="card">
+            <h3>📋 填寫配送資訊</h3>
+            <input type="text" id="custName" placeholder="收件姓名">
+            <input type="tel" id="custPhone" placeholder="收件電話">
+            <input type="text" id="storeName" placeholder="收件地址或門市名稱">
+            <button class="btn-main" onclick="switchView('payment')">下一步：匯款資訊</button>
+        </div>
+    </section>
+
+    <section id="viewPayment" class="view-section">
+        <div class="card">
+            <h3>💰 匯款回報</h3>
+            <p>國泰世華 (013) 帳號：036506234641</p>
+            <input type="text" id="payNote" placeholder="匯款後五碼">
+            <input type="file" id="payImg" accept="image/*">
+            <button class="btn-main" onclick="submitFinalOrder()">完成下單</button>
+        </div>
+    </section>
+
+    <section id="viewAdmin" class="view-section">
+        <div class="card"><h3>📦 所有訂單</h3><div id="todayOrderList">載入中...</div></div>
+    </section>
+
+    <section id="viewSettings" class="view-section">
+        <div class="card"><button class="btn-main" onclick="addProduct()">➕ 新增商品</button></div>
+    </section>
+</div>
+
+<script>
+    // --- 🔑 密碼已填入 ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCHjJ5hMINdJOTp6StbSBk7_lIm0Ao8cvo",
+        authDomain: "maymaobing.firebaseapp.com",
+        databaseURL: "https://maymaobing-default-rtdb.firebaseio.com",
+        projectId: "maymaobing",
+        storageBucket: "maymaobing.firebasestorage.app",
+        messagingSenderId: "188571020090",
+        appId: "1:188571020090:web:a3c1336a337e245a107e03"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let db = { products: [], orders: [], cart: [] };
+    const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
+    if(isAdmin) document.getElementById('adminNav').style.display = 'flex';
+
+    database.ref('products').on('value', (s) => {
+        db.products = s.val() ? Object.values(s.val()) : [];
+        renderShop();
+    });
+
+    database.ref('orders').on('value', (s) => {
+        db.orders = s.val() ? Object.values(s.val()).reverse() : [];
+        if(isAdmin) renderAdmin();
+    });
+
+    function switchView(v) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
+    }
+
+    function renderShop() {
+        document.getElementById('shopDisplay').innerHTML = db.products.map((p, i) => `
+            <div class="card" style="text-align:center;">
+                <b>${p.name}</b><br>$${p.price}<br>
+                <button class="btn-main" onclick="addToCart(${i})">加入</button>
+            </div>
+        `).join('') || "目前暫無商品，請在設定頁面新增";
+    }
+
+    function addToCart(i) {
+        db.cart.push(db.products[i]);
+        document.getElementById('cart-floater').style.display = 'block';
+        document.getElementById('cart-count').innerText = db.cart.length;
+    }
+
+    function submitFinalOrder() {
+        const id = Date.now();
+        const data = {
+            customer: document.getElementById('custName').value,
+            phone: document.getElementById('custPhone').value,
+            payNote: document.getElementById('payNote').value,
+            date: new Date().toLocaleDateString(),
+            id: id
+        };
+        database.ref('orders/' + id).set(data);
+        alert("下單成功！");
+        location.reload();
+    }
+
+    function renderAdmin() {
+        document.getElementById('todayOrderList').innerHTML = db.orders.map(o => `
+            <div class="order-item">
+                <span class="status-badge status-wait">新訂單</span>
+                <b>${o.customer}</b> (${o.phone})<br>後五碼：${o.payNote}
+            </div>
+        `).join('');
+    }
+
+    function addProduct() {
+        const n = prompt("商品名稱"), p = prompt("價格");
+        if(n && p) database.ref('products/').push({ name: n, price: parseInt(p) });
+    }
+</script>
+</body>
+</html>
