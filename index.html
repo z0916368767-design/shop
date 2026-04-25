@@ -3,65 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沒毛病｜寵物溝通 花草能量療癒商品</title>
+    <title>沒毛病｜寵物溝通 花草能量療癒</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
         :root { --bg: #FDFCF9; --white: #FFFFFF; --sage: #8DAA91; --sage-dark: #6B846F; --text: #4A4A4A; --radius: 18px; }
         body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
-        
-        /* 頁首設計 */
-        header { text-align: center; padding: 20px 15px; background: white; border-bottom: 1px solid #F0F0F0; position: sticky; top: 0; z-index: 1100; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        header { text-align: center; padding: 20px 15px; background: white; border-bottom: 1px solid #F0F0F0; position: sticky; top: 0; z-index: 1100; }
         header h1 { font-size: 1.2rem; color: var(--sage-dark); margin: 0; letter-spacing: 1px; }
-
-        /* 導覽列 (僅管理員顯示) */
-        nav { background: white; padding: 10px; display: flex; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; }
-        nav button { background: none; border: 1px solid var(--sage); color: var(--sage); padding: 6px 15px; border-radius: 50px; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.3s; }
+        nav { background: white; padding: 10px; display: flex; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        nav button { background: none; border: 1px solid var(--sage); color: var(--sage); padding: 6px 15px; border-radius: 50px; cursor: pointer; font-size: 13px; font-weight: 500; }
         nav button.active { background: var(--sage); color: white; }
-
         .container { max-width: 800px; margin: 0 auto; padding: 15px; box-sizing: border-box; }
         .view-section { display: none; animation: fadeIn 0.4s ease; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 卡片設計 */
-        .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.02); }
+        .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.04); margin-bottom: 15px; }
         .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .p-card { background: white; border-radius: var(--radius); padding: 15px; text-align: center; border: 1px solid #F5F5F5; transition: 0.3s; }
-        .p-card:active { transform: scale(0.96); }
-        .p-img { width: 100%; aspect-ratio: 1/1; background: #F9F9F9; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #CCC; font-size: 12px; }
-
-        /* 按鈕與輸入框 */
+        .p-card { background: white; border-radius: var(--radius); padding: 15px; text-align: center; border: 1px solid #F5F5F5; }
         .btn-main { background: var(--sage); color: white; border: none; padding: 14px; border-radius: 50px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
-        .btn-outline { background: none; border: 1px solid #DDD; color: #777; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer; margin-top: 8px; font-size: 14px; }
-        input, textarea, select { width: 100%; border: 1px solid #EEE; border-radius: 12px; padding: 14px; margin: 8px 0; box-sizing: border-box; background: #FAFAFA; font-size: 15px; outline: none; }
-        input:focus { border-color: var(--sage); background: white; }
-
-        /* 訂單與狀態 */
-        .order-item { border-bottom: 1px solid #F5F5F5; padding: 15px 0; position: relative; }
-        .status-badge { padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; float: right; cursor: pointer; }
+        .btn-outline { background: none; border: 1px solid #DDD; color: #777; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer; margin-top: 8px; }
+        input, textarea, select { width: 100%; border: 1px solid #EEE; border-radius: 12px; padding: 14px; margin: 8px 0; box-sizing: border-box; background: #FAFAFA; font-size: 15px; }
+        .order-item { border-bottom: 1px solid #F5F5F5; padding: 15px 0; cursor: pointer; }
+        .status-badge { padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: bold; float: right; }
         .status-wait { background: #FFF4E5; color: #D48806; }
         .status-ship { background: #E6F7FF; color: #1890FF; }
         .status-done { background: #F6FFED; color: #52C41A; }
-        
-        /* 購物車懸浮按鈕 */
-        #cart-floater { position: fixed; bottom: 25px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 50px; z-index: 2000; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: bold; display: none; }
-        #alert-box { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 30px; border-radius: 50px; display: none; z-index: 9999; font-size: 14px; }
+        #cart-floater { position: fixed; bottom: 25px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 50px; z-index: 2000; cursor: pointer; display: none; }
+        #alert-box { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 30px; border-radius: 50px; display: none; z-index: 9999; }
+
+        /* 彈窗樣式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; padding: 25px; position: relative; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body>
 
 <div id="alert-box">🛎️ 系統通知</div>
 
+<div id="orderModal" class="modal-overlay" onclick="this.style.display='none'">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="modalBody"></div>
+    </div>
+</div>
+
 <header><h1>沒毛病｜寵物溝通 花草能量療癒</h1></header>
 
 <nav id="adminNav" style="display:none;">
     <button class="nav-btn active" onclick="switchView('shop', this)">能量商店</button>
     <button class="nav-btn" onclick="switchView('admin', this)">訂單管理</button>
-    <button class="nav-btn" onclick="switchView('settings', this)">商品與系統</button>
+    <button class="nav-btn" onclick="switchView('settings', this)">系統設定</button>
 </nav>
 
 <div id="cart-floater" onclick="switchView('cartDetail')">🛒 購物車 (<span id="cart-count">0</span>)</div>
@@ -73,77 +66,56 @@
 
     <section id="viewCartDetail" class="view-section">
         <div class="card">
-            <h3 style="margin-top:0;">🛒 您的購物車</h3>
+            <h3>🛒 您的購物車</h3>
             <div id="fullCartList"></div>
-            <div style="text-align:right; margin-top:20px; font-weight:bold; font-size:1.2rem;">
-                總計：<span id="cartSubtotal" style="color:#C67E7E;">$0</span>
-            </div>
+            <div style="text-align:right; margin-top:20px; font-weight:bold;">總計：<span id="cartSubtotal" style="color:#C67E7E;">$0</span></div>
             <button class="btn-main" onclick="switchView('checkout')">填寫收件資訊</button>
-            <button class="btn-outline" onclick="switchView('shop')">回商店繼續逛</button>
         </div>
     </section>
 
     <section id="viewCheckout" class="view-section">
         <div class="card">
-            <h3>📋 收件人資訊</h3>
-            <input type="text" id="custName" placeholder="收件人真實姓名">
-            <input type="tel" id="custPhone" placeholder="收件人電話">
+            <h3>📋 收件資訊</h3>
+            <input type="text" id="custName" placeholder="姓名">
+            <input type="tel" id="custPhone" placeholder="電話">
             <select id="logistic">
                 <option value="7-11 店到店">7-11 店到店 ($60)</option>
                 <option value="全家 店到店">全家 店到店 ($60)</option>
                 <option value="宅配到府">宅配到府 ($100)</option>
             </select>
-            <input type="text" id="areaLoc" placeholder="縣市區域 (例：台北市大安區)">
-            <input type="text" id="storeName" placeholder="門市名稱 或 詳細地址">
-            <button class="btn-main" onclick="processToPayment()">確認資訊，下一步</button>
+            <input type="text" id="areaLoc" placeholder="縣市區域">
+            <input type="text" id="storeName" placeholder="詳細地址或門市">
+            <button class="btn-main" onclick="processToPayment()">下一步</button>
         </div>
     </section>
 
     <section id="viewPayment" class="view-section">
-        <div class="card" style="border-top:5px solid var(--sage);">
+        <div class="card">
             <h3>💰 匯款回報</h3>
-            <div style="background:#F9F9F9; padding:15px; border-radius:12px; font-size:14px; line-height:1.8; border:1px dashed #DDD;">
-                銀行：<b>國泰世華 (013)</b><br>
-                帳號：<b>036506234641</b><br>
-                應付金額：<b id="finalTotal" style="color:#C67E7E; font-size:1.2rem;">$0</b>
-            </div>
-            <div style="margin-top:20px;">
-                <label style="font-weight:bold; font-size:14px;">1. 匯款後五碼：</label>
-                <input type="text" id="payNote" placeholder="請輸入 5 碼數字">
-                <label style="font-weight:bold; font-size:14px;">2. 匯款截圖 (選填)：</label>
-                <input type="file" id="payImg" accept="image/*">
-                <button class="btn-main" onclick="submitFinalOrder()">提交訂單，等待對帳</button>
-            </div>
+            <p>國泰世華 (013) 036506234641<br>應付：<b id="finalTotal">$0</b></p>
+            <input type="text" id="payNote" placeholder="匯款後五碼">
+            <input type="file" id="payImg" accept="image/*">
+            <button class="btn-main" onclick="submitFinalOrder()">提交訂單</button>
         </div>
     </section>
 
     <section id="viewAdmin" class="view-section">
         <div class="card">
-            <h3 style="margin:0 0 10px 0;">🔍 訂單搜尋</h3>
-            <input type="text" id="searchAdmin" oninput="renderAdmin()" placeholder="搜尋姓名、電話或後五碼...">
-        </div>
-        <div class="card">
-            <h3>📦 訂單列表</h3>
-            <div id="orderList">載入中...</div>
+            <input type="text" id="searchAdmin" oninput="renderAdmin()" placeholder="搜尋姓名/電話/後五碼">
+            <div id="orderList"></div>
         </div>
     </section>
 
     <section id="viewSettings" class="view-section">
         <div class="card">
-            <h3>💬 LINE 通知範本</h3>
-            <textarea id="lineTpl" rows="4"></textarea>
-            <button class="btn-outline" onclick="saveSettings()">儲存範本</button>
-        </div>
-        <div class="card">
             <h3>➕ 商品管理</h3>
-            <div id="pTable" style="margin-bottom:15px;"></div>
+            <div id="pTable"></div>
             <button class="btn-main" onclick="addProduct()">新增商品</button>
         </div>
     </section>
 </div>
 
 <script>
-    // --- 🔑 Firebase 配置 (已填入妳的最新資訊) ---
     const firebaseConfig = {
         apiKey: "AIzaSyCHjJ5hMINdJOTp6StbSBk7_lIm0Ao8cvo",
         authDomain: "maymaobing.firebaseapp.com",
@@ -157,13 +129,9 @@
     const database = firebase.database();
 
     let db = { products: [], orders: [], cart: [] };
-    let currentCheckout = null;
-
-    // 管理員判斷
     const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
     if(isAdmin) document.getElementById('adminNav').style.display = 'flex';
 
-    // 監聽雲端資料
     database.ref('products').on('value', (s) => {
         db.products = s.val() ? Object.keys(s.val()).map(k => ({...s.val()[k], id: k})) : [];
         renderShop();
@@ -175,7 +143,6 @@
         if(isAdmin) renderAdmin();
     });
 
-    // 介面切換
     function switchView(view, btn) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
         document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
@@ -183,145 +150,115 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
-        if(view === 'cartDetail') renderCartDetail();
-        window.scrollTo(0, 0);
     }
 
-    // 商店功能
     function renderShop() {
-        const container = document.getElementById('shopDisplay');
-        if(db.products.length === 0) {
-            container.innerHTML = "<p style='grid-column:1/3; color:gray; text-align:center;'>尚未上架商品</p>";
-            return;
-        }
-        container.innerHTML = db.products.map((p, idx) => `
+        document.getElementById('shopDisplay').innerHTML = db.products.map(p => `
             <div class="p-card">
-                <div class="p-img">沒毛病</div>
-                <div style="font-weight:bold; margin-bottom:5px;">${p.name}</div>
-                <div style="color:var(--sage-dark); margin-bottom:10px;">$${p.price}</div>
-                <button class="btn-main" style="padding:8px; font-size:12px;" onclick="addToCart('${p.id}')">加入購物車</button>
+                <b>${p.name}</b><br>$${p.price}<br>
+                <button class="btn-main" onclick="addToCart('${p.id}')">加入購物車</button>
             </div>
-        `).join('');
+        `).join('') || "暫無商品";
     }
 
     function addToCart(id) {
-        const p = db.products.find(x => x.id === id);
-        db.cart.push(p);
+        db.cart.push(db.products.find(x => x.id === id));
         document.getElementById('cart-floater').style.display = 'block';
         document.getElementById('cart-count').innerText = db.cart.length;
-        showAlert("已加入購物車 ✨");
-    }
-
-    function renderCartDetail() {
-        let html = ""; let sub = 0;
-        db.cart.forEach((item, idx) => {
-            html += `<div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #EEE;">
-                <span>${item.name} ($${item.price})</span>
-                <span onclick="db.cart.splice(${idx},1);renderCartDetail();" style="color:#C67E7E; cursor:pointer;">移除</span>
-            </div>`;
-            sub += item.price;
-        });
-        document.getElementById('fullCartList').innerHTML = html || "<p style='color:gray;text-align:center;'>車內空空如也...</p>";
-        document.getElementById('cartSubtotal').innerText = `$${sub}`;
-        document.getElementById('cart-count').innerText = db.cart.length;
-        if(db.cart.length === 0) document.getElementById('cart-floater').style.display = 'none';
+        showAlert("已加入 ✨");
     }
 
     function processToPayment() {
-        const name = document.getElementById('custName').value;
-        const phone = document.getElementById('custPhone').value;
-        if(!name || !phone) return alert("請填寫收件人姓名與電話");
-        
         const fee = document.getElementById('logistic').value.includes('宅配') ? 100 : 60;
-        const subtotal = db.cart.reduce((sum, p) => sum + p.price, 0);
-        
-        currentCheckout = {
-            customer: name, phone: phone,
+        const total = db.cart.reduce((s, p) => s + p.price, 0) + fee;
+        window.tempOrder = {
+            customer: document.getElementById('custName').value,
+            phone: document.getElementById('custPhone').value,
             items: db.cart.map(p => p.name).join('、'),
-            total: subtotal + fee,
+            total: total,
             address: document.getElementById('areaLoc').value + " " + document.getElementById('storeName').value,
-            logistic: document.getElementById('logistic').value,
             date: new Date().toLocaleDateString(),
             status: '待對帳'
         };
-        
-        document.getElementById('finalTotal').innerText = `$${currentCheckout.total}`;
+        document.getElementById('finalTotal').innerText = `$${total}`;
         switchView('payment');
     }
 
     function submitFinalOrder() {
         const note = document.getElementById('payNote').value;
-        if(!note) return alert("請填寫匯款後五碼以供對帳");
-        
         const file = document.getElementById('payImg').files[0];
-        const saveOrder = (imgBase64 = null) => {
-            const id = Date.now();
-            database.ref('orders/' + id).set({ ...currentCheckout, payNote: note, payImg: imgBase64, id: id });
-            alert("訂單已提交！請等待老闆對帳後出貨。");
-            location.href = window.location.pathname; // 回首頁
+        const save = (img = null) => {
+            database.ref('orders/' + Date.now()).set({ ...window.tempOrder, payNote: note, payImg: img });
+            alert("下單完成！");
+            location.reload();
         };
-
         if(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => saveOrder(e.target.result);
-            reader.readAsDataURL(file);
-        } else { saveOrder(); }
+            const r = new FileReader(); r.onload = (e) => save(e.target.result); r.readAsDataURL(file);
+        } else { save(); }
     }
 
-    // 管理功能
     function renderAdmin() {
         const key = document.getElementById('searchAdmin').value.toLowerCase();
-        const list = db.orders.filter(o => 
-            o.customer.toLowerCase().includes(key) || 
-            o.phone.includes(key) || 
-            o.payNote.includes(key)
-        );
-        
+        const list = db.orders.filter(o => o.customer.includes(key) || o.payNote.includes(key));
         document.getElementById('orderList').innerHTML = list.map(o => `
-            <div class="order-item">
-                <span class="status-badge status-${o.status==='待對帳'?'wait':o.status==='已出貨'?'ship':'done'}" onclick="cycleStatus('${o.firebaseId}', '${o.status}')">
-                    ${o.status}
-                </span>
-                <div style="font-weight:bold;">${o.customer} <small style="font-weight:normal; color:#999;">(${o.date})</small></div>
-                <div style="font-size:13px; color:#666; margin:5px 0;">品項：${o.items}</div>
-                <div style="font-size:13px;">金額：<b>$${o.total}</b> | 後五碼：<span style="background:#FFF9E6; padding:2px 5px;">${o.payNote}</span></div>
-                ${o.payImg ? `<img src="${o.payImg}" style="width:80px; height:80px; object-fit:cover; border-radius:8px; margin-top:10px;">` : ''}
+            <div class="order-item" onclick="openOrderModal('${o.firebaseId}')">
+                <span class="status-badge status-${o.status==='待對帳'?'wait':o.status==='已出貨'?'ship':'done'}">${o.status}</span>
+                <b>${o.customer}</b> ($${o.total})<br><small>後五碼：${o.payNote}</small>
             </div>
-        `).join('') || "沒有符合的訂單";
+        `).join('');
     }
 
-    function cycleStatus(id, current) {
-        const flow = {'待對帳':'已出貨', '已出貨':'已完成', '已完成':'待對帳'};
-        database.ref('orders/' + id).update({ status: flow[current] });
+    function openOrderModal(fid) {
+        const o = db.orders.find(x => x.firebaseId === fid);
+        const msg = `您好，感謝您在「沒毛病」下單！\n品項：${o.items}\n總金額：$${o.total}\n您的匯款後五碼：${o.payNote}\n我們會儘快為您核對並出貨。`;
+        document.getElementById('modalBody').innerHTML = `
+            <h3 style="margin-top:0;">訂單詳情</h3><hr>
+            <p><b>顧客：</b>${o.customer} (${o.phone})</p>
+            <p><b>品項：</b>${o.items}</p>
+            <p><b>總額：</b>$${o.total}</p>
+            <p><b>地址：</b>${o.address}</p>
+            <p><b>後五碼：</b>${o.payNote}</p>
+            <button class="btn-main" style="background:#00B900;" onclick="notifyLine('${encodeURIComponent(msg)}')">通知客人 (LINE)</button>
+            <button class="btn-outline" onclick="cycleStatus('${o.firebaseId}','${o.status}')">變更狀態為下一階段</button>
+            ${o.payImg ? `<img src="${o.payImg}" style="width:100%; margin-top:15px; border-radius:10px;">` : ''}
+        `;
+        document.getElementById('orderModal').style.display = 'flex';
+    }
+
+    function notifyLine(msg) {
+        // 複製文字到剪貼簿
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = decodeURIComponent(msg);
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        
+        showAlert("通知內容已複製！正在前往 LINE...");
+        setTimeout(() => {
+            window.open('https://chat.line.biz/U0edda282743bd496cc80d2662bd76ca1', '_blank');
+        }, 1000);
+    }
+
+    function cycleStatus(id, cur) {
+        const next = cur === '待對帳' ? '已出貨' : cur === '已出貨' ? '已完成' : '待對帳';
+        database.ref('orders/' + id).update({ status: next });
+        document.getElementById('orderModal').style.display = 'none';
+    }
+
+    function addProduct() {
+        const n = prompt("商品名稱"), p = prompt("價格");
+        if(n && p) database.ref('products/').push({ name: n, price: parseInt(p) });
     }
 
     function renderSettings() {
         document.getElementById('pTable').innerHTML = db.products.map(p => `
-            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #F0F0F0; font-size:14px;">
-                <span>${p.name} ($${p.price})</span>
-                <span onclick="deleteProduct('${p.id}')" style="color:red; cursor:pointer;">[刪除]</span>
-            </div>
-        `).join('') || "尚無商品";
-        document.getElementById('lineTpl').value = localStorage.getItem('lineTpl') || "您好，已收到訂單！總額為 {TOTAL}，確認後將盡快為您出貨。";
-    }
-
-    function addProduct() {
-        const n = prompt("輸入商品名稱");
-        const p = prompt("輸入價格 (純數字)");
-        if(n && p) database.ref('products/').push({ name: n, price: parseInt(p) });
-    }
-
-    function deleteProduct(id) { if(confirm("確定要刪除嗎？")) database.ref('products/' + id).remove(); }
-    
-    function saveSettings() {
-        localStorage.setItem('lineTpl', document.getElementById('lineTpl').value);
-        showAlert("設定已儲存");
+            <div style="padding:10px; border-bottom:1px solid #EEE;">${p.name} ($${p.price}) <span onclick="database.ref('products/${p.id}').remove()" style="color:red; float:right;">[刪]</span></div>
+        `).join('');
     }
 
     function showAlert(m) {
-        const b = document.getElementById('alert-box');
-        b.innerText = m; b.style.display = 'block';
-        setTimeout(() => b.style.display = 'none', 3000);
+        const b = document.getElementById('alert-box'); b.innerText = m; b.style.display = 'block'; setTimeout(() => b.style.display = 'none', 3000);
     }
 </script>
 </body>
