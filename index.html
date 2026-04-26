@@ -23,11 +23,13 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.04); margin-bottom: 15px; }
         .p-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .p-card { background: white; border-radius: var(--radius); padding: 15px; text-align: center; border: 1px solid #F5F5F5; }
+        .p-card { background: white; border-radius: var(--radius); padding: 15px; text-align: center; border: 1px solid #F5F5F5; position: relative; }
         .p-img { width: 100%; aspect-ratio: 1/1; border-radius: 12px; object-fit: cover; background: #F9F9F9; margin-bottom: 10px; }
+        .sold-out-tag { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); color: white; padding: 5px 15px; border-radius: 50px; font-weight: bold; }
         .qty-btn { background: #EEE; border: none; width: 28px; height: 28px; border-radius: 5px; cursor: pointer; }
         .qty-num { margin: 0 12px; font-weight: bold; }
         .btn-main { background: var(--sage); color: white; border: none; padding: 14px; border-radius: 50px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
+        .btn-main:disabled { background: #CCC; }
         .btn-outline { background: none; border: 1px solid #DDD; color: #777; padding: 10px; border-radius: 50px; width: 100%; cursor: pointer; margin-top: 8px; }
         input, textarea, select { width: 100%; border: 1px solid #EEE; border-radius: 12px; padding: 14px; margin: 8px 0; box-sizing: border-box; background: #FAFAFA; font-size: 15px; }
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
@@ -37,7 +39,7 @@
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 20px; }
         .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; padding: 25px; max-height: 90vh; overflow-y: auto; position: relative; }
         #cart-floater { position: fixed; bottom: 25px; right: 20px; background: #333; color: white; padding: 15px 25px; border-radius: 50px; z-index: 2000; cursor: pointer; display: none; }
-        #alert-box { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 30px; border-radius: 50px; display: none; z-index: 9999; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        #alert-box { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 30px; border-radius: 50px; display: none; z-index: 9999; }
     </style>
 </head>
 <body>
@@ -102,12 +104,15 @@
     </section>
 
     <section id="viewSettings" class="view-section">
-        <div class="card"><h3>📂 分類管理</h3><div id="catList"></div><button class="btn-outline" onclick="addCategory()">新增分類</button></div>
+        <div class="card"><h3>📂 分類歷史紀錄</h3><div id="catList"></div><button class="btn-outline" onclick="addCategory()">新增分類</button></div>
         <div class="card">
-            <h3>📦 商品設定</h3><div id="pSetList"></div><hr>
-            <h4>新增商品</h4>
-            <input type="text" id="newPName" placeholder="名稱"><input type="number" id="newPPrice" placeholder="價格"><select id="newPCat"></select>
-            <input type="file" id="newPImg" accept="image/*"><button class="btn-main" onclick="saveProduct()">儲存商品</button>
+            <h3>📦 商品歷史紀錄</h3><div id="pSetList"></div><hr>
+            <h4>新增/編輯商品</h4>
+            <input type="text" id="newPName" placeholder="名稱"><input type="number" id="newPPrice" placeholder="價格">
+            <input type="number" id="newPStock" placeholder="初始庫存數量">
+            <select id="newPCat"></select>
+            <input type="file" id="newPImg" accept="image/*">
+            <button class="btn-main" onclick="saveProduct()">儲存商品</button>
         </div>
     </section>
 </div>
@@ -129,27 +134,25 @@
     const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
     if(isAdmin) document.getElementById('adminNav').style.display = 'flex';
 
-    // 即時監聽與彈窗邏輯
-    let firstLoad = true;
+    let orderCount = 0;
     database.ref('/').on('value', (s) => {
         const data = s.val() || {};
-        const oldOrderCount = Object.keys(db.orders).length;
         db.products = data.products || {};
         db.orders = data.orders || {};
         db.cats = data.cats || ["全部商品"];
         
-        const newOrderCount = Object.keys(db.orders).length;
-        if (!firstLoad && isAdmin && newOrderCount > oldOrderCount) {
+        const newCount = Object.keys(db.orders).length;
+        if (isAdmin && orderCount > 0 && newCount > orderCount) {
             const latest = Object.values(db.orders).sort((a,b)=>b.ts-a.ts)[0];
             showNewOrderModal(latest);
         }
-        firstLoad = false;
+        orderCount = newCount;
         renderShop();
         if(isAdmin) { renderAdmin(); renderSettings(); }
     });
 
     function showNewOrderModal(o) {
-        document.getElementById('modalContent').innerHTML = `<h2 style="color:red; text-align:center;">🔔 新訂單通知！</h2><hr><p><b>顧客：</b>${o.name}</p><p><b>金額：</b>$${o.total}</p><p><b>品項：</b>${o.items}</p><button class="btn-main" onclick="document.getElementById('modal').style.display='none'">我知道了</button>`;
+        document.getElementById('modalContent').innerHTML = `<h2 style="color:#C67E7E; text-align:center;">🔔 新訂單來囉！</h2><hr><p><b>顧客：</b>${o.name}</p><p><b>金額：</b>$${o.total}</p><p><b>內容：</b>${o.items}</p><button class="btn-main" onclick="document.getElementById('modal').style.display='none'">查看後台</button>`;
         document.getElementById('modal').style.display = 'flex';
     }
 
@@ -168,12 +171,24 @@
 
     function filterShop(cat) {
         const list = Object.keys(db.products).filter(k => cat === "全部商品" || db.products[k].cat === cat);
-        document.getElementById('shopDisplay').innerHTML = list.map(k => `<div class="p-card">${db.products[k].img?`<img src="${db.products[k].img}" class="p-img">`:''}<br><b>${db.products[k].name}</b><br>$${db.products[k].price}<br><button class="btn-main" onclick="addToCart('${k}')">加入</button></div>`).join('');
+        document.getElementById('shopDisplay').innerHTML = list.map(k => {
+            const p = db.products[k];
+            const isSoldOut = p.stock <= 0;
+            return `<div class="p-card">
+                ${p.img?`<img src="${p.img}" class="p-img">`:''}
+                ${isSoldOut ? `<div class="sold-out-tag">已售完</div>` : ''}
+                <br><b>${p.name}</b><br>$${p.price}<br>
+                <small style="color:gray;">剩餘庫存: ${p.stock}</small><br>
+                <button class="btn-main" onclick="addToCart('${k}')" ${isSoldOut ? 'disabled' : ''}>${isSoldOut ? '補貨中' : '加入購物車'}</button>
+            </div>`;
+        }).join('');
     }
 
     function addToCart(k) {
         const item = db.cart.find(x => x.key === k);
-        if(item) { item.qty++; } else { db.cart.push({ key: k, name: db.products[k].name, price: db.products[k].price, qty: 1 }); }
+        const p = db.products[k];
+        if(item) { if(item.qty < p.stock) item.qty++; else return alert("超過庫存數量囉！"); }
+        else { db.cart.push({ key: k, name: p.name, price: p.price, qty: 1 }); }
         updateCartCount(); showAlert("已加入 ✨");
     }
 
@@ -186,28 +201,50 @@
     function renderCart() {
         let h = ""; let sub = 0;
         db.cart.forEach((x, i) => {
-            h += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #EEE;"><div><b>${x.name}</b><br>$${x.price}</div><div><button class="qty-btn" onclick="changeQty(${i},-1)">-</button><span class="qty-num">${x.qty}</span><button class="qty-btn" onclick="changeQty(${i},1)">+</button><span onclick="db.cart.splice(${i},1);renderCart();updateCartCount();" style="color:red; margin-left:10px;">刪</span></div></div>`;
+            h += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #EEE;"><div><b>${x.name}</b><br>$${x.price}</div><div><button class="qty-btn" onclick="changeQty(${i},-1)">-</button><span class="qty-num">${x.qty}</span><button class="qty-btn" onclick="changeQty(${i},1)">+</button><span onclick="db.cart.splice(${i},1);renderCart();updateCartCount();" style="color:red; margin-left:10px;">刪除</span></div></div>`;
             sub += x.price * x.qty;
         });
-        document.getElementById('cartList').innerHTML = h || "空空的";
+        document.getElementById('cartList').innerHTML = h || "購物車空空的唷 🐰";
         document.getElementById('cartSubtotal').innerText = `$${sub}`;
     }
 
-    function changeQty(i, d) { db.cart[i].qty = Math.max(1, db.cart[i].qty + d); renderCart(); updateCartCount(); }
+    function changeQty(i, d) {
+        const max = db.products[db.cart[i].key].stock;
+        if(d > 0 && db.cart[i].qty >= max) return alert("抱歉，庫存剩這些而已唷！");
+        db.cart[i].qty = Math.max(1, db.cart[i].qty + d); renderCart(); updateCartCount();
+    }
 
     function toPayment() {
         const fee = document.getElementById('logistic').value.includes('宅配') ? 100 : 60;
-        window.tempOrder = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value, addr: document.getElementById('custAddr').value, items: db.cart.map(x => `${x.name}x${x.qty}`).join('、'), total: db.cart.reduce((s,x)=>s+x.price*x.qty,0)+fee, date: new Date().toLocaleDateString(), status: "待對帳", ts: Date.now() };
+        window.tempOrder = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value, addr: document.getElementById('custAddr').value, items: db.cart.map(x => `${x.name}x${x.qty}`).join('、'), cartData: db.cart, total: db.cart.reduce((s,x)=>s+x.price*x.qty,0)+fee, date: new Date().toLocaleDateString(), status: "待對帳", ts: Date.now() };
         document.getElementById('finalTotal').innerText = `$${window.tempOrder.total}`; switchView('payment');
     }
 
-    function copyAcc() { const t = document.createElement("input"); document.body.appendChild(t); t.value="036506234641"; t.select(); document.execCommand("copy"); document.body.removeChild(t); showAlert("複製成功！"); }
+    function copyAcc() { const t = document.createElement("input"); document.body.appendChild(t); t.value="036506234641"; t.select(); document.execCommand("copy"); document.body.removeChild(t); showAlert("帳號複製成功！💖"); }
 
     function submitOrder() {
-        const n = document.getElementById('payNote').value; if(!n) return alert("請填五碼");
+        const n = document.getElementById('payNote').value; if(!n) return alert("請填寫後五碼唷！");
         const f = document.getElementById('payImg').files[0];
-        const s = (img=null) => { database.ref('orders/'+Date.now()).set({...window.tempOrder, payNote:n, payImg:img}); alert("完成！"); location.reload(); };
-        if(f) { const r = new FileReader(); r.onload=(e)=>s(e.target.result); r.readAsDataURL(f); } else { s(); }
+        const save = (img=null) => {
+            // 扣除庫存
+            window.tempOrder.cartData.forEach(item => {
+                const newStock = db.products[item.key].stock - item.qty;
+                database.ref('products/' + item.key).update({ stock: newStock });
+            });
+            database.ref('orders/'+Date.now()).set({...window.tempOrder, payNote:n, payImg:img});
+            
+            // 顯示可愛成功視窗
+            document.getElementById('modalContent').innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h2 style="color:var(--sage-dark);">感謝您的購買～ 🍵✨</h2>
+                    <p>您的訂單已成功送出！🥰</p>
+                    <p style="font-size:14px; color:#666;">有任何問題都可以私訊官方Line詢問呦～📩</p>
+                    <p style="font-size:14px; color:#666;">有任何改變也歡迎跟我分享呦～🌷🌈</p>
+                    <button class="btn-main" onclick="location.reload()">回首頁</button>
+                </div>`;
+            document.getElementById('modal').style.display = 'flex';
+        };
+        if(f) { const r = new FileReader(); r.onload=(e)=>save(e.target.result); r.readAsDataURL(f); } else { save(); }
     }
 
     function renderAdmin() {
@@ -226,7 +263,14 @@
     function openOrderModal(fid) {
         const o = db.orders[fid];
         const msg = `您好！已收到您的訂單 $${o.total}\n品項：${o.items}\n我們會盡快出貨，謝謝！`;
-        document.getElementById('modalContent').innerHTML = `<h3>訂單詳情</h3><hr><p><b>顧客：</b>${o.name} (${o.phone})</p><p><b>地址：</b>${o.addr}</p><p><b>後五碼：</b>${o.payNote}</p><button class="btn-main" style="background:#00B900;" onclick="notifyLine('${encodeURIComponent(msg)}')">通知客人 (LINE)</button><button class="btn-outline" onclick="database.ref('orders/${fid}').update({status:'已完成'});document.getElementById('modal').style.display='none'">設為已完成</button>${o.payImg?`<img src="${o.payImg}" style="width:100%; border-radius:10px; margin-top:10px;">`:''}`;
+        document.getElementById('modalContent').innerHTML = `
+            <h3>訂單詳情</h3><hr>
+            <p><b>顧客：</b>${o.name} (${o.phone})</p>
+            <p><b>地址：</b>${o.addr}</p>
+            <p><b>匯款後五碼：</b>${o.payNote}</p>
+            ${o.payImg?`<div style="margin:10px 0;"><b>匯款截圖：</b><br><img src="${o.payImg}" style="width:100%; border-radius:10px;"></div>`:''}
+            <button class="btn-main" style="background:#00B900;" onclick="notifyLine('${encodeURIComponent(msg)}')">通知客人 (LINE)</button>
+            <button class="btn-outline" onclick="database.ref('orders/${fid}').update({status:'已完成'});document.getElementById('modal').style.display='none'">設為已完成</button>`;
         document.getElementById('modal').style.display = 'flex';
     }
 
@@ -237,17 +281,17 @@
     }
 
     function renderSettings() {
-        document.getElementById('catList').innerHTML = db.cats.map((c,i)=>`<div>${c} <span onclick="delCat(${i})" style="color:red; cursor:pointer;">[刪]</span></div>`).join('');
+        document.getElementById('catList').innerHTML = db.cats.map((c,i)=>`<div>${c} <span onclick="delCat(${i})" style="color:red; cursor:pointer; float:right;">[刪除]</span></div>`).join('');
         document.getElementById('newPCat').innerHTML = db.cats.map(c=>`<option value="${c}">${c}</option>`).join('');
-        document.getElementById('pSetList').innerHTML = Object.keys(db.products).map(k => `<div>${db.products[k].name} <span onclick="database.ref('products/${k}').remove()" style="color:red; float:right;">[刪]</span></div>`).join('');
+        document.getElementById('pSetList').innerHTML = Object.keys(db.products).map(k => `<div>${db.products[k].name} (庫存:${db.products[k].stock}) <span onclick="database.ref('products/${k}').remove()" style="color:red; float:right; cursor:pointer;">[刪除]</span></div>`).join('');
     }
 
     function addCategory() { const c = prompt("分類名稱"); if(c) { db.cats.push(c); database.ref('cats').set(db.cats); } }
     function delCat(i) { if(i===0) return; db.cats.splice(i,1); database.ref('cats').set(db.cats); }
     function saveProduct() {
-        const n = document.getElementById('newPName').value, p = document.getElementById('newPPrice').value, c = document.getElementById('newPCat').value, f = document.getElementById('newPImg').files[0];
-        if(!n||!p) return alert("必填");
-        const s = (img=null)=>{ database.ref('products/').push({name:n, price:parseInt(p), cat:c, img}); alert("OK"); };
+        const n = document.getElementById('newPName').value, p = document.getElementById('newPPrice').value, s_qty = document.getElementById('newPStock').value, c = document.getElementById('newPCat').value, f = document.getElementById('newPImg').files[0];
+        if(!n||!p||!s_qty) return alert("名稱、價格與庫存都是必填唷！");
+        const s = (img=null)=>{ database.ref('products/').push({name:n, price:parseInt(p), stock:parseInt(s_qty), cat:c, img}); alert("商品已加入歷史紀錄！"); };
         if(f){ const r=new FileReader(); r.onload=(e)=>s(e.target.result); r.readAsDataURL(f); } else { s(); }
     }
     function showAlert(m) { const b = document.getElementById('alert-box'); b.innerText = m; b.style.display='block'; setTimeout(()=>b.style.display='none', 2500); }
