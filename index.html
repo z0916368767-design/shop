@@ -5,33 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>沒毛病｜寵物溝通 花草能量療癒商品</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <style>
         :root { --bg: #FDFCF9; --white: #FFFFFF; --sage: #8DAA91; --sage-dark: #6B846F; --text: #4A4A4A; --radius: 18px; }
         body { background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', sans-serif; margin: 0; padding-bottom: 80px; }
+        
         header { text-align: center; padding: 15px; background: white; border-bottom: 1px solid #EEE; position: sticky; top: 0; z-index: 1100; }
         header h1 { font-size: 1.1rem; color: var(--sage-dark); margin: 0; }
+        
         nav { background: white; padding: 10px; display: flex; justify-content: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
         nav button { background: none; border: 1px solid var(--sage); color: var(--sage); padding: 6px 12px; border-radius: 50px; cursor: pointer; font-size: 13px; white-space: nowrap; }
         nav button.active { background: var(--sage); color: white; }
+
         .container { max-width: 800px; width: 100%; margin: 0 auto; padding: 15px; box-sizing: border-box; }
         .view-section { display: none; }
         .view-section.active { display: block; }
+
         .card { background: white; border-radius: var(--radius); padding: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 15px; position: relative; }
         .btn-main { background: var(--sage); color: white; border: none; padding: 12px; border-radius: 50px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-outline { background: none; border: 1px solid #CCC; color: #666; padding: 8px; border-radius: 50px; width: 100%; cursor: pointer; margin-top: 5px; }
+        
         input, textarea, select { width: 100%; border: 1px solid #EEE; border-radius: 10px; padding: 12px; margin: 8px 0; box-sizing: border-box; background: #FAFAFA; font-size: 14px; }
+        
+        /* 訂單與狀態標籤 */
         .order-item { border-bottom: 1px solid #F0F0F0; padding: 12px 0; cursor: pointer; }
         .status-badge { padding: 4px 10px; border-radius: 50px; font-size: 12px; cursor: pointer; font-weight: bold; float: right; }
         .status-wait { background: #FFF4E5; color: #D48806; }
         .status-ship { background: #E6F7FF; color: #1890FF; }
         .status-done { background: #F6FFED; color: #52C41A; }
-        .pay-img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #EEE; vertical-align: middle; margin-right: 10px; }
+
+        /* 圖片預覽 */
+        .pay-img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #EEE; vertical-align: middle; margin-right: 10px; cursor: zoom-in; }
+
+        /* 彈窗樣式 (Modal) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000; padding: 20px; box-sizing: border-box; }
         .modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; padding: 25px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; }
+
         #cart-floater { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 20px; border-radius: 50px; z-index: 2000; cursor: pointer; display: none; }
         #alert-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 25px; border-radius: 50px; display: none; z-index: 9999; }
     </style>
@@ -40,15 +49,16 @@
 
 <div id="alert-box">🛎️ 系統通知</div>
 
-<div id="orderDetailModal" class="modal-overlay" onclick="this.style.display='none'">
+<div id="orderDetailModal" class="modal-overlay" onclick="closeDetailModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close-modal" onclick="closeDetailModal()">×</span>
         <div id="modalBody"></div>
     </div>
 </div>
 
 <header><h1>沒毛病｜寵物溝通 花草能量療癒商品</h1></header>
 
-<nav id="adminNav" style="display:none;">
+<nav>
     <button id="navBtnShop" class="active" onclick="switchView('shop')">能量商店</button>
     <button id="navBtnAdmin" onclick="switchView('admin')">管理後台</button>
     <button id="navBtnHistory" onclick="switchView('history')">歷史訂單</button>
@@ -58,17 +68,19 @@
 <div id="cart-floater" onclick="switchView('cartDetail')">🛒 購物車 (<span id="cart-count">0</span>)</div>
 
 <div class="container">
+    
     <section id="viewShop" class="view-section active">
         <div id="catScroll" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;"></div>
-        <div id="shopDisplay" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;"></section>
+        <div id="shopDisplay" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;"></div>
+    </section>
 
     <section id="viewCartDetail" class="view-section">
         <div class="card">
             <h3>🛒 購物車明細</h3>
             <div id="fullCartList"></div>
-            <div style="text-align:right; margin-top:15px; font-weight:bold;">總計：<span id="cartSubtotal" style="color:#C67E7E;">$0</span></div>
+            <div style="text-align:right; margin-top:15px; font-weight:bold; font-size:1.1rem;">總計：<span id="cartSubtotal" style="color:#C67E7E;">$0</span></div>
             <button class="btn-main" onclick="switchView('checkout')">前往結帳</button>
-            <button class="btn-outline" onclick="switchView('shop')">返回商店</button>
+            <button class="btn-outline" onclick="switchView('shop')">繼續購物</button>
         </div>
     </section>
 
@@ -78,75 +90,94 @@
             <input type="text" id="custName" placeholder="收件姓名">
             <input type="tel" id="custPhone" placeholder="收件電話">
             <select id="logistic"><option value="7-11 店到店">7-11 店到店 ($60)</option><option value="全家 店到店">全家 店到店 ($60)</option><option value="宅配到府">宅配到府 ($100)</option></select>
-            <input type="text" id="areaLoc" placeholder="縣市區域"><input type="text" id="storeName" placeholder="門市或詳細地址">
-            <button class="btn-main" onclick="processToPayment()">確認資訊並匯款</button>
+            <input type="text" id="areaLoc" placeholder="縣市區域">
+            <input type="text" id="storeName" placeholder="門市名稱或詳細地址">
+            <button class="btn-main" onclick="processToPayment()">確認並前往匯款頁面</button>
         </div>
     </section>
 
     <section id="viewPayment" class="view-section">
         <div class="card" style="border-top:5px solid var(--sage);">
             <h3>💰 請完成匯款，訂單才算成立呦~</h3>
-            <div style="background:#F4F4F4; padding:15px; border-radius:10px; font-size:14px;">銀行：國泰世華 (013)<br>帳號：036506234641<br>總額：<b id="finalTotal" style="color:red;">$0</b></div>
+            <div style="background:#F4F4F4; padding:15px; border-radius:10px; line-height:2; font-size:14px;">
+                銀行：國泰世華 (013)<br>
+                帳號：<span>036506234641</span><br>
+                應付總額：<b id="finalTotal" style="color:red; font-size:1.2rem;">$0</b>
+            </div>
             <div style="margin-top:20px;">
-                <label>1. 匯款後五碼：</label><input type="text" id="payNote">
-                <label>2. 上傳截圖：</label><input type="file" id="payImg" accept="image/*">
-                <button class="btn-main" onclick="submitFinalOrder()">提交回報</button>
+                <label style="font-size:13px; font-weight:bold;">1. 填寫匯款後五碼：</label>
+                <input type="text" id="payNote" placeholder="請輸入 5 位數字">
+                <label style="font-size:13px; font-weight:bold;">2. 上傳匯款截圖 (相簿選擇)：</label>
+                <input type="file" id="payImg" accept="image/*">
+                <button class="btn-main" onclick="submitFinalOrder()">提交回報，正式下單</button>
             </div>
         </div>
     </section>
 
     <section id="viewAdmin" class="view-section">
-        <div class="card"><h3>🔍 抓單搜尋</h3><input type="text" id="searchAdmin" oninput="renderAdmin()" placeholder="搜尋姓名或電話..."></div>
-        <div class="card"><h3>📦 今日訂單</h3><div id="todayOrderList"></div></div>
+        <div class="card">
+            <h3>🔍 抓單搜尋 (姓名/電話)</h3>
+            <input type="text" id="searchAdmin" placeholder="輸入關鍵字..." oninput="searchToday()">
+            <div id="adminSearchResult"></div>
+        </div>
+        <div class="card">
+            <h3>📦 今日每筆訂單 (點擊看明細)</h3>
+            <div id="todayOrderList"></div>
+        </div>
     </section>
 
     <section id="viewHistory" class="view-section">
-        <div class="card"><h3>📅 歷史查詢</h3><input type="date" id="histDate" onchange="renderHistory()"><div id="historyResult"></div></div>
+        <div class="card">
+            <h3>📅 歷史紀錄查詢</h3>
+            <div style="display:flex; gap:5px;"><input type="date" id="histDate"><input type="text" id="histKey" placeholder="姓名..."></div>
+            <button class="btn-main" onclick="filterHistory()">搜尋歷史</button>
+            <div id="historyResult" style="margin-top:15px;"></div>
+        </div>
     </section>
 
     <section id="viewSettings" class="view-section">
-        <div class="card"><h3>💬 LINE 範本</h3><textarea id="lineTpl" rows="4"></textarea></div>
-        <div class="card"><h3>➕ 商品管理</h3><div id="pTable"></div><button class="btn-main" onclick="addProduct()">新增測試品</button></div>
+        <div class="card">
+            <h3>💬 LINE 訊息範本</h3>
+            <textarea id="lineTpl" rows="4"></textarea>
+        </div>
+        <div class="card">
+            <h3>➕ 商品管理</h3>
+            <div id="pTable" style="font-size:12px; margin-bottom:10px;"></div>
+            <input type="text" id="pName" placeholder="名稱"><input type="number" id="pPrice" placeholder="價格">
+            <select id="pCatSel"></select>
+            <button class="btn-main" onclick="addProduct()">上架商品</button>
+        </div>
     </section>
 </div>
 
 <script>
-    // --- 🔑 這裡填入妳的 Firebase 設定 (下方有教學) ---
-    const firebaseConfig = {
-        apiKey: "請替換成妳的ApiKey",
-        databaseURL: "請替換成妳的資料庫網址",
-        projectId: "請替換成妳的ProjectID"
+    let db = {
+        categories: ['全部商品', '最熱銷🔥', '新品上架🆕'],
+        products: [{ name: '花草能量噴霧', price: 580, cat: '最熱銷🔥' }, { name: '寵物溝通預約', price: 1200, cat: '新品上架🆕' }],
+        orders: [],
+        cart: []
     };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
 
-    let db = { categories: ['全部商品', '最熱銷🔥', '新品上架🆕'], products: [], orders: [], cart: [] };
     let checkoutData = null;
 
-    // --- 自動判斷權限：網址後方加上 ?admin=1 才會開啟管理介面 ---
-    const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
-    if(isAdmin) document.getElementById('adminNav').style.display = 'flex';
-
-    // 從雲端即時抓取資料
-    database.ref('orders').on('value', (snapshot) => {
-        const val = snapshot.val();
-        db.orders = val ? Object.values(val).reverse() : [];
-        if(isAdmin) { renderAdmin(); renderHistory(); }
-    });
-
-    database.ref('products').on('value', (snapshot) => {
-        const val = snapshot.val();
-        db.products = val ? Object.values(val) : [{name:'花草噴霧', price:580, cat:'最熱銷🔥'}];
+    function init() {
+        document.getElementById('lineTpl').value = "感謝您在「沒毛病」下單！\n品項：{ITEMS}\n金額：${TOTAL}\n後五碼：{NOTE}\n確認無誤後會盡快為您安排。";
         renderShop('全部商品');
-    });
+        renderSettings();
+    }
 
-    // --- 核心邏輯 (保持原程式不變) ---
     function switchView(view) {
         document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
         document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+        const navBtn = document.getElementById('navBtn' + (view === 'settings' ? 'Settings' : view === 'history' ? 'History' : view === 'admin' ? 'Admin' : 'Shop'));
+        if(navBtn) navBtn.classList.add('active');
+        if(view === 'cartDetail') renderCartDetail();
+        if(view === 'admin') renderAdmin();
         window.scrollTo(0, 0);
     }
 
+    // --- 購物車與下單 ---
     function addToCart(idx) {
         db.cart.push(db.products[idx]);
         document.getElementById('cart-floater').style.display = 'block';
@@ -155,25 +186,37 @@
     }
 
     function renderCartDetail() {
-        let html = ""; let sub = 0;
-        db.cart.forEach((i, idx) => {
-            html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #EEE;"><span>${i.name}</span><span onclick="db.cart.splice(${idx},1);renderCartDetail();" style="color:red;">移除</span></div>`;
-            sub += i.price;
+        const list = document.getElementById('fullCartList');
+        if(db.cart.length === 0) { list.innerHTML = "<p style='text-align:center; color:gray;'>空空的...</p>"; document.getElementById('cartSubtotal').innerText = "$0"; return; }
+        let html = ""; let subtotal = 0;
+        db.cart.forEach((item, i) => {
+            html += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dotted #EEE;">
+                <span>${item.name} ($${item.price})</span>
+                <span style="color:red; cursor:pointer;" onclick="removeFromCart(${i})">移除</span>
+            </div>`;
+            subtotal += item.price;
         });
-        document.getElementById('fullCartList').innerHTML = html;
-        document.getElementById('cartSubtotal').innerText = `$${sub}`;
+        list.innerHTML = html;
+        document.getElementById('cartSubtotal').innerText = `$${subtotal}`;
+    }
+
+    function removeFromCart(i) {
+        db.cart.splice(i, 1);
+        renderCartDetail();
+        document.getElementById('cart-count').innerText = db.cart.length;
+        if(db.cart.length === 0) document.getElementById('cart-floater').style.display = 'none';
     }
 
     function processToPayment() {
+        const name = document.getElementById('custName').value;
+        const phone = document.getElementById('custPhone').value;
         const fee = document.getElementById('logistic').value.includes('宅配') ? 100 : 60;
+        if(!name || !phone) return alert("資訊不完整");
         checkoutData = {
-            customer: document.getElementById('custName').value,
-            phone: document.getElementById('custPhone').value,
-            items: db.cart.map(i => i.name).join(', '),
-            total: db.cart.reduce((s,i)=>s+i.price,0)+fee,
-            address: document.getElementById('areaLoc').value + document.getElementById('storeName').value,
-            date: new Date().toISOString().split('T')[0],
-            status: '待對帳'
+            customer: name, phone: phone, items: db.cart.map(i => i.name).join(', '),
+            total: db.cart.reduce((s, i) => s + i.price, 0) + fee, 
+            address: document.getElementById('areaLoc').value + " " + document.getElementById('storeName').value,
+            date: new Date().toISOString().split('T')[0]
         };
         document.getElementById('finalTotal').innerText = `$${checkoutData.total}`;
         switchView('payment');
@@ -181,67 +224,122 @@
 
     function submitFinalOrder() {
         const note = document.getElementById('payNote').value;
-        const file = document.getElementById('payImg').files[0];
+        const fileInput = document.getElementById('payImg');
         
-        const send = (imgBase64 = null) => {
-            const newOrder = { ...checkoutData, payNote: note, payImg: imgBase64, id: Date.now() };
-            database.ref('orders/' + newOrder.id).set(newOrder); // 寫入雲端
-            showAlert("訂單已同步至雲端！");
-            db.cart = [];
-            setTimeout(()=>location.reload(), 1000);
+        const finish = (imgBase64 = null) => {
+            const finalOrder = { ...checkoutData, payNote: note, payImg: imgBase64, status: '待對帳' };
+            db.orders.unshift(finalOrder);
+            showAlert("🛎️ 訂單提交成功！");
+            db.cart = []; document.getElementById('cart-floater').style.display = 'none';
+            switchView('shop');
         };
 
-        if(file) {
+        if (fileInput.files && fileInput.files[0]) {
             const reader = new FileReader();
-            reader.onload = (e) => send(e.target.result);
-            reader.readAsDataURL(file);
-        } else { send(); }
+            reader.onload = (e) => finish(e.target.result);
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            finish();
+        }
     }
 
-    // --- 管理後台 (即時雲端更新) ---
-    function renderAdmin() {
-        const today = new Date().toISOString().split('T')[0];
-        const key = document.getElementById('searchAdmin').value.toLowerCase();
-        const list = db.orders.filter(o => o.date === today && (o.customer.includes(key) || o.phone.includes(key)));
-        document.getElementById('todayOrderList').innerHTML = list.map(o => `
-            <div class="order-item" onclick="openDetail('${o.id}')">
-                <span class="status-badge status-${o.status==='待對帳'?'wait':o.status==='已出貨'?'ship':'done'}" onclick="updateStatus('${o.id}','${o.status}',event)">${o.status}</span>
-                ${o.payImg?`<img src="${o.payImg}" class="pay-img-preview">`:''}
-                <b>${o.customer}</b> ($${o.total})
-            </div>
-        `).join('');
-    }
-
-    function updateStatus(id, cur, e) {
-        e.stopPropagation();
-        const flow = {'待對帳':'已出貨','已出貨':'已完成','已完成':'待對帳'};
-        database.ref('orders/' + id).update({ status: flow[cur] });
-    }
-
-    function openDetail(id) {
-        const o = db.orders.find(x => x.id == id);
-        document.getElementById('modalBody').innerHTML = `
-            <h3>訂單明細</h3><hr>
-            <p>顧客：${o.customer} / ${o.phone}</p>
-            <p>品項：${o.items}</p>
-            <p>總額：$${o.total}</p>
-            <p>後五碼：${o.payNote}</p>
-            ${o.payImg?`<img src="${o.payImg}" style="width:100%;">`:''}
+    // --- 管理後台 (含彈窗邏輯) ---
+    function openDetail(idx) {
+        const o = db.orders[idx];
+        const modalBody = document.getElementById('modalBody');
+        modalBody.innerHTML = `
+            <h3 style="color:var(--sage-dark);">📋 訂單詳細資訊</h3>
+            <hr>
+            <p><b>顧客姓名：</b>${o.customer}</p>
+            <p><b>聯絡電話：</b>${o.phone}</p>
+            <p><b>購買明細：</b><br>${o.items.replace(/, /g, '<br>')}</p>
+            <p><b>總金額：</b><span style="color:red; font-weight:bold;">$${o.total}</span></p>
+            <p><b>匯款後五碼：</b>${o.payNote || '未填'}</p>
+            <p><b>收件地址：</b>${o.address}</p>
+            <p><b>匯款截圖：</b></p>
+            ${o.payImg ? `<img src="${o.payImg}" style="width:100%; border-radius:10px; cursor:zoom-out;" onclick="closeDetailModal()">` : '<p style="color:gray;">無截圖</p>'}
+            <button class="btn-main" onclick="copyLine(${idx})">複製明細開 LINE</button>
         `;
         document.getElementById('orderDetailModal').style.display = 'flex';
     }
 
+    function closeDetailModal(e) {
+        document.getElementById('orderDetailModal').style.display = 'none';
+    }
+
+    function cycleStatus(idx, e) {
+        e.stopPropagation(); // 防止點擊狀態時觸發開啟詳情彈窗
+        const flow = ['待對帳', '已出貨', '已完成'];
+        const currentIdx = flow.indexOf(db.orders[idx].status);
+        db.orders[idx].status = flow[(currentIdx + 1) % flow.length];
+        renderAdmin();
+        if(document.getElementById('viewHistory').classList.contains('active')) filterHistory();
+    }
+
+    function getOrderListItem(o, i) {
+        const sClass = o.status === '待對帳' ? 'status-wait' : o.status === '已出貨' ? 'status-ship' : 'status-done';
+        return `
+            <div class="order-item" onclick="openDetail(${i})">
+                <span class="status-badge ${sClass}" onclick="cycleStatus(${i}, event)">${o.status}</span>
+                ${o.payImg ? `<img src="${o.payImg}" class="pay-img-preview">` : ''}
+                <b>${o.customer}</b> <small style="color:gray;">($${o.total})</small>
+                <div style="font-size:11px; color:gray; margin-top:5px;">碼:${o.payNote} / ${o.items.substring(0,20)}...</div>
+            </div>`;
+    }
+
+    function renderAdmin() {
+        const today = new Date().toISOString().split('T')[0];
+        const todayList = db.orders.filter(o => o.date === today);
+        document.getElementById('todayOrderList').innerHTML = todayList.map((o) => getOrderListItem(o, db.orders.indexOf(o))).join('');
+    }
+
+    function searchToday() {
+        const key = document.getElementById('searchAdmin').value.toLowerCase();
+        const res = db.orders.filter(o => o.customer.toLowerCase().includes(key) || o.phone.includes(key));
+        document.getElementById('adminSearchResult').innerHTML = key ? res.map((o) => getOrderListItem(o, db.orders.indexOf(o))).join('') : "";
+    }
+
+    function filterHistory() {
+        const d = document.getElementById('histDate').value;
+        const k = document.getElementById('histKey').value.toLowerCase();
+        const res = db.orders.filter(o => (d ? o.date === d : true) && (k ? o.customer.toLowerCase().includes(k) : true));
+        document.getElementById('historyResult').innerHTML = res.map((o) => getOrderListItem(o, db.orders.indexOf(o))).join('');
+    }
+
+    // --- 商品管理 ---
+    function renderSettings() {
+        document.getElementById('pTable').innerHTML = db.products.map((p, i) => `<div>${p.name} ($${p.price}) <span style="color:red; cursor:pointer;" onclick="db.products.splice(${i},1); renderSettings();">[刪]</span></div>`).join('');
+        document.getElementById('pCatSel').innerHTML = db.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function addProduct() {
+        const n = document.getElementById('pName').value, p = parseInt(document.getElementById('pPrice').value);
+        if(n && p) { db.products.push({ name: n, price: p, cat: document.getElementById('pCatSel').value }); renderSettings(); renderShop('全部商品'); }
+    }
+
     function renderShop(filter) {
+        document.getElementById('catScroll').innerHTML = db.categories.map(c => `<button onclick="renderShop('${c}')" style="margin-right:5px; padding:5px 15px; border-radius:50px; border:1px solid var(--sage); background:${filter===c?'var(--sage)':'none'}; color:${filter===c?'#fff':'var(--sage)'}">${c}</button>`).join('');
         const list = filter === '全部商品' ? db.products : db.products.filter(p => p.cat === filter);
-        document.getElementById('shopDisplay').innerHTML = list.map((p,idx) => `
-            <div class="card" style="text-align:center;">
-                <b>${p.name}</b><br>$${p.price}<br>
-                <button class="btn-main" onclick="addToCart(${idx})">加入</button>
+        document.getElementById('shopDisplay').innerHTML = list.map((p) => `
+            <div class="card" style="text-align:center; padding:10px;">
+                <div style="height:80px; background:#f9f9f9; border-radius:10px;"></div>
+                <div style="font-weight:bold; font-size:14px; margin-top:5px;">${p.name}</div>
+                <div style="color:var(--sage-dark); font-size:13px;">$${p.price}</div>
+                <button class="btn-main" style="padding:5px; font-size:11px;" onclick="addToCart(${db.products.indexOf(p)})">加入購物車</button>
             </div>
         `).join('');
     }
 
-    function showAlert(m) { const b=document.getElementById('alert-box'); b.innerText=m; b.style.display='block'; setTimeout(()=>b.style.display='none',3000); }
+    function copyLine(idx) {
+        const o = db.orders[idx];
+        const msg = document.getElementById('lineTpl').value.replace('{ITEMS}', o.items).replace('{TOTAL}', o.total).replace('{NOTE}', o.payNote);
+        navigator.clipboard.writeText(msg);
+        showAlert("明細已複製！");
+        setTimeout(() => window.open("https://chat.line.biz/U0edda282743bd496cc80d2662bd76ca1", "_blank"), 600);
+    }
+
+    function showAlert(m) { const b = document.getElementById('alert-box'); b.innerText = m; b.style.display = 'block'; setTimeout(()=>b.style.display='none', 3000); }
+
     init();
 </script>
 </body>
